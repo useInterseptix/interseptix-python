@@ -7,7 +7,7 @@ Two lines of code. Your agent runs unchanged. Identyx silently intercepts every 
 ## Install (beta)
 
 ```bash
-pip install git+https://github.com/identyx/identyx-python.git
+pip install git+https://github.com/karunkumarnimmakayala/identyx-python.git
 ```
 
 ## Quickstart
@@ -53,4 +53,4 @@ The SDK monkey-patches `httpx` and `requests` at import time. No changes to your
 
 - Dashboard: [identyx.io](https://identyx.io)
 - Docs: [identyx.io/#/docs](https://identyx.io/#/docs)
-- Issues: [github.com/identyx/identyx-python/issues](https://github.com/identyx/identyx-python/issues)
+- Issues: [github.com/karunkumarnimmakayala/identyx-python/issues](https://github.com/karunkumarnimmakayala/identyx-python/issues)
