@@ -53,4 +53,4 @@ The SDK monkey-patches `httpx` and `requests` at import time. No changes to your
 
 - Dashboard: [identyx.io](https://identyx.io)
 - Docs: [identyx.io/#/docs](https://identyx.io/#/docs)
-- Issues: [github.com/karunkumarnimmakayala/identyx-python/issues](https://github.com/karunkumarnimmakayala/identyx-python/issues)
+- Issues: [github.com/getidentyx/identyx-python/issues](https://github.com/getidentyx/identyx-python/issues)

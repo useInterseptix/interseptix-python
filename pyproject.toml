@@ -19,4 +19,4 @@ dependencies = [
 
 [project.urls]
 Homepage   = "https://identyx.io"
-Repository = "https://github.com/karunkumarnimmakayala/identyx-python"
+Repository = "https://github.com/getidentyx/identyx-python"
