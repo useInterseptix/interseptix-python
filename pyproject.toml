@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=68", "wheel"]
-build-backend = "setuptools.backends.legacy:build"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "identyx"
@@ -8,12 +8,15 @@ version = "0.2.0b1"
 description = "Zero-config IAM and policy enforcement for AI agents"
 readme = "README.md"
 requires-python = ">=3.9"
-license = { text = "MIT" }
+license = "MIT"
 keywords = ["ai-agents", "iam", "security", "policy", "audit", "langgraph", "crewai"]
+authors = [
+    { name = "Identyx", email = "hello@identyx.io" }
+]
 dependencies = [
     "httpx>=0.25.0",
 ]
 
 [project.urls]
 Homepage   = "https://identyx.io"
-Repository = "https://github.com/identyx/identyx-python"
+Repository = "https://github.com/karunkumarnimmakayala/identyx-python"

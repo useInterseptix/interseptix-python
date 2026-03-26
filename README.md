@@ -7,7 +7,7 @@ Two lines of code. Your agent runs unchanged. Identyx silently intercepts every 
 ## Install (beta)
 
 ```bash
-pip install git+https://github.com/karunkumarnimmakayala/identyx-python.git
+pip install identyx
 ```
 
 ## Quickstart
