@@ -1,5 +1,5 @@
 """
-Identyx Python SDK — local policy enforcement, no round-trip on tool calls.
+Interseptix Python SDK — local policy enforcement, no round-trip on tool calls.
 """
 
 import os, re, json, threading, time, secrets
@@ -13,7 +13,7 @@ try:
 except ImportError:
     _HAS_HTTPX = False
 
-IDENTYX_BASE_URL = os.environ.get("IDENTYX_BASE_URL", "https://api.identyx.io/v1")
+INTERSEPTIX_BASE_URL = os.environ.get("INTERSEPTIX_BASE_URL", "https://api.interseptix.com/v1")
 _SDK_VERSION = "0.2.0"
 _ALWAYS_BLOCKED = ("/_debug", "/internal/", "/admin/delete")
 
@@ -128,11 +128,11 @@ class Passport:
     tags: dict
     created_at: str
 
-class Identyx:
-    """Identyx SDK — two lines, local enforcement, async audit logs."""
+class Interseptix:
+    """Interseptix SDK — two lines, local enforcement, async audit logs."""
 
-    def __init__(self, api_key: str, base_url: str = IDENTYX_BASE_URL, fail_open: bool = True):
-        if not any(api_key.startswith(p) for p in ("idx_live_","idx_test_","krd_live_","krd_test_","aid_live_")):
+    def __init__(self, api_key: str, base_url: str = INTERSEPTIX_BASE_URL, fail_open: bool = True):
+        if not any(api_key.startswith(p) for p in ("isx_live_","isx_test_","krd_live_","krd_test_","aid_live_")):
             raise ValueError("Invalid API key format.")
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
@@ -161,7 +161,7 @@ class Identyx:
             else:
                 self._ready = self.fail_open
         except Exception as e:
-            print(f"[Identyx] Warning: {e}. Running {'open' if self.fail_open else 'closed'}.")
+            print(f"[Interseptix] Warning: {e}. Running {'open' if self.fail_open else 'closed'}.")
             self._ready = self.fail_open
 
     def _refresh_loop(self):
@@ -215,7 +215,7 @@ class Identyx:
                 return orig(client_self, request, *args, **kwargs)
             if not sdk._ready:
                 if sdk.fail_open: return orig(client_self, request, *args, **kwargs)
-                raise PermissionError("[Identyx] SDK not ready.")
+                raise PermissionError("[Interseptix] SDK not ready.")
             c = _ctx()
             if not c.agent_id:
                 return orig(client_self, request, *args, **kwargs)
@@ -225,7 +225,7 @@ class Identyx:
             decision = _evaluate_local(c.agent_id,c.scopes,request.method,str(request.url.path),payload_str,rules)
             sdk._async_log(c.agent_id, request, decision)
             if not decision["allowed"]:
-                raise PermissionError(f"[Identyx] {decision['outcome']}: {decision['reason']}")
+                raise PermissionError(f"[Interseptix] {decision['outcome']}: {decision['reason']}")
             return orig(client_self, request, *args, **kwargs)
         httpx.Client.send = patched
         try:
@@ -235,7 +235,7 @@ class Identyx:
                 if sdk.base_url in str(req.url): return orig_r(s,req,**kw)
                 c = _ctx()
                 if c.agent_id and not sdk._ready and not sdk.fail_open:
-                    raise PermissionError("[Identyx] SDK not ready.")
+                    raise PermissionError("[Interseptix] SDK not ready.")
                 return orig_r(s,req,**kw)
             requests.Session.send = patched_r
         except ImportError: pass
@@ -327,7 +327,7 @@ class Identyx:
         if raise_on_block and not decision.get("allowed"):
             outcome = decision.get("outcome","blocked")
             message = decision.get("message","Action not allowed.")
-            raise PermissionError(f"[identyx:{outcome}] {message}")
+            raise PermissionError(f"[interseptix:{outcome}] {message}")
         return decision
 
     # ── Roles ─────────────────────────────────────────────────────────
@@ -382,10 +382,12 @@ class Identyx:
 
     def __enter__(self): return self
     def __exit__(self, *args): pass
-    def __repr__(self): return f"Identyx(org={self._org_name!r}, tier={self._tier!r})"
+    def __repr__(self): return f"Interseptix(org={self._org_name!r}, tier={self._tier!r})"
 
 
 # Aliases for backwards compatibility
-IdentyxClient = Identyx
-AImmigration = Identyx          # legacy alias
-AImmigrationClient = Identyx    # legacy alias
+InterseptixClient = Interseptix
+IdentyxClient = Interseptix     # legacy alias
+Identyx = Interseptix           # legacy alias
+AImmigration = Interseptix      # legacy alias
+AImmigrationClient = Interseptix # legacy alias
