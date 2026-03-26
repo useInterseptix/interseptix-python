@@ -19,4 +19,4 @@ dependencies = [
 
 [project.urls]
 Homepage   = "https://interseptix.com"
-Repository = "https://github.com/getinterseptix/interseptix-python"
+Repository = "https://github.com/interseptix/interseptix-python"
