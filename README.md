@@ -2,9 +2,9 @@
 
 Zero-config IAM and policy enforcement for AI agents.
 
-Two lines of code. Your agent runs unchanged. Interseptix silently intercepts every outbound HTTP call — enforcing policies, redacting PII, and logging everything with a cryptographic signature.
+Two lines of code. Your agent runs unchanged. Interseptix intercepts every outbound HTTP call — enforcing policies, redacting PII, and logging everything with a cryptographic signature.
 
-## Install (beta)
+## Install
 
 ```bash
 pip install interseptix
@@ -16,33 +16,34 @@ pip install interseptix
 import os
 from interseptix import InterseptixClient
 
-# Initialise once at the top of your agent entrypoint
 sdk = InterseptixClient(api_key=os.environ["INTERSEPTIX_API_KEY"])
-
-# Activate the agent — base scopes loaded automatically from your dashboard
 sdk.set_agent(agent_id=os.environ["AGENT_ID"])
 
 # Run your agent exactly as before — nothing else changes
 agent = create_react_agent(llm, tools=[...])
 agent.invoke({"messages": [("user", "Process refund for order 123")]})
-
-# Behind the scenes:
-#   • every HTTP call is intercepted before it executes
-#   • calls outside the agent's scopes → blocked, PermissionError raised
-#   • PII in payloads → redacted before logging
-#   • high-value actions → held for human approval
-#   • everything logged with a cryptographic signature
 ```
 
-## How it works
+That's it. Scopes and policies are configured in your [dashboard](https://interseptix.com) and enforced automatically on every call your agent makes.
 
-The SDK monkey-patches `httpx` and `requests` at import time. No changes to your agent tools or LLM calls are needed.
+## What happens behind the scenes
 
-- **Scopes** — configured in the Interseptix dashboard, fetched automatically by `set_agent()`
-- **Policies** — `deny_if`, `rate_limit`, `require_approval_if`, `redact_pii` rules evaluated on every call
-- **PCI DSS** — card numbers and CVVs are hard-stripped at the SDK before any data leaves your machine
-- **HIPAA** — payloads containing PHI field names are withheld from logging
-- **Audit ledger** — every intercepted call is HMAC-signed and stored immutably
+Every HTTP call your agent makes is intercepted before it executes:
+
+- **Out of scope** → blocked, `PermissionError` raised
+- **Matches a deny rule** → blocked
+- **Exceeds rate limit** → blocked
+- **Requires human approval** → held in queue
+- **Contains PII** → redacted before logging
+- **Everything** → logged with a cryptographic signature
+
+## Environment variables
+
+| Variable | Description |
+|---|---|
+| `INTERSEPTIX_API_KEY` | Your org API key from the dashboard |
+| `AGENT_ID` | The agent's ID issued on registration |
+| `INTERSEPTIX_BASE_URL` | Override API URL (default: `https://interseptix.com/v1`) |
 
 ## Requirements
 
@@ -52,5 +53,4 @@ The SDK monkey-patches `httpx` and `requests` at import time. No changes to your
 ## Links
 
 - Dashboard: [interseptix.com](https://interseptix.com)
-- Docs: [interseptix.com/#/docs](https://interseptix.com/#/docs)
 - Issues: [github.com/useInterseptix/interseptix-python/issues](https://github.com/useInterseptix/interseptix-python/issues)

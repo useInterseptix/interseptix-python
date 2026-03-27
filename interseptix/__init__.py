@@ -13,7 +13,7 @@ try:
 except ImportError:
     _HAS_HTTPX = False
 
-INTERSEPTIX_BASE_URL = os.environ.get("INTERSEPTIX_BASE_URL", "https://api.interseptix.com/v1")
+INTERSEPTIX_BASE_URL = os.environ.get("INTERSEPTIX_BASE_URL", "https://interseptix.com/v1")
 _SDK_VERSION = "0.2.0"
 _ALWAYS_BLOCKED = ("/_debug", "/internal/", "/admin/delete")
 
@@ -385,9 +385,4 @@ class Interseptix:
     def __repr__(self): return f"Interseptix(org={self._org_name!r}, tier={self._tier!r})"
 
 
-# Aliases for backwards compatibility
-InterseptixClient = Interseptix
-IdentyxClient = Interseptix     # legacy alias
-Identyx = Interseptix           # legacy alias
-AImmigration = Interseptix      # legacy alias
-AImmigrationClient = Interseptix # legacy alias
+InterseptixClient = Interseptix  # convenience alias
