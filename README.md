@@ -53,4 +53,4 @@ The SDK monkey-patches `httpx` and `requests` at import time. No changes to your
 
 - Dashboard: [interseptix.com](https://interseptix.com)
 - Docs: [interseptix.com/#/docs](https://interseptix.com/#/docs)
-- Issues: [github.com/interseptix/interseptix-python/issues](https://github.com/interseptix/interseptix-python/issues)
+- Issues: [github.com/useInterseptix/interseptix-python/issues](https://github.com/useInterseptix/interseptix-python/issues)
