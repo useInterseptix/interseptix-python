@@ -165,14 +165,23 @@ class Interseptix:
             self._ready = self.fail_open
 
     def _refresh_loop(self):
+        backoff = 30
         while True:
-            time.sleep(30)
+            time.sleep(backoff)
             if not self._client: continue
             try:
                 r = self._client.get(f"{self.base_url}/sdk/rules")
                 if r.status_code == 200:
-                    with self._rules_lock: self._rules = r.json().get("rules",[])
-            except: pass
+                    rules = r.json().get("rules", [])
+                    if not rules:
+                        print("[Interseptix] Warning: 0 active policies returned from server.")
+                    with self._rules_lock: self._rules = rules
+                    backoff = 30  # reset on success
+                else:
+                    backoff = min(backoff * 2, 300)  # exponential backoff, max 5min
+            except Exception as e:
+                print(f"[Interseptix] Warning: failed to refresh rules: {e}. Retrying in {backoff}s.")
+                backoff = min(backoff * 2, 300)
 
     def register(self, name, owner, framework="unknown", scopes=None, tags=None, parent_agent_id=None):
         if not self._client: raise RuntimeError("httpx required")
@@ -200,10 +209,17 @@ class Interseptix:
                 r = self._client.get(f"{self.base_url}/agents/{agent_id}", timeout=5.0)
                 if r.status_code == 200:
                     base_scopes = r.json().get("effective_scopes", [])
-            except Exception:
-                pass
+                else:
+                    raise RuntimeError(f"Failed to fetch agent scopes: HTTP {r.status_code}")
+            except RuntimeError:
+                raise
+            except Exception as e:
+                raise RuntimeError(
+                    f"[Interseptix] Could not fetch scopes for agent '{agent_id}': {e}. "
+                    "Check your API key and network connection."
+                ) from e
         extra = scopes or []
-        merged = list(dict.fromkeys(base_scopes + extra))  # deduplicate, preserve order
+        merged = list(dict.fromkeys(base_scopes + extra))
         c = _ctx(); c.agent_id = agent_id; c.scopes = merged
 
     def _install_interceptor(self):
