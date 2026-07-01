@@ -20,3 +20,11 @@ dependencies = [
 [project.urls]
 Homepage   = "https://interseptix.com"
 Repository = "https://github.com/useInterseptix/interseptix-python"
+
+# Explicit package discovery. The project root contains extra top-level
+# directories (tests/, dist/, *.egg-info) and a stray __init__.py, which makes
+# setuptools flat-layout auto-discovery ambiguous. Restrict discovery to the
+# `interseptix` package and its subpackages (e.g. interseptix.integrations).
+[tool.setuptools.packages.find]
+include = ["interseptix*"]
+exclude = ["tests*"]

@@ -1,0 +1,41 @@
+name: Publish to PyPI
+
+# Publishes the `interseptix` package to PyPI when a tag matching v* is pushed.
+# Example: git tag v0.3.0 && git push origin v0.3.0
+#
+# NOTE: This workflow uses a long-lived PyPI API token stored in the
+# PYPI_TOKEN repository secret. A more secure alternative is PyPI Trusted
+# Publishing (OIDC), which issues short-lived credentials per run and
+# requires no stored token. To switch:
+#   1. Configure a "pending publisher" on PyPI for this repo/workflow.
+#   2. Replace the twine step below with `pypa/gh-action-pypi-publish`.
+#   3. Add `permissions: id-token: write` to this job and drop the
+#      TWINE_USERNAME / TWINE_PASSWORD env vars and the PYPI_TOKEN secret.
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install build tooling
+        run: pip install build twine
+
+      - name: Build distributions
+        run: python -m build
+
+      - name: Upload to PyPI
+        run: twine upload dist/*
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
