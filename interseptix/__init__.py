@@ -2,10 +2,12 @@
 Interseptix Python SDK — local policy enforcement, no round-trip on tool calls.
 """
 
-import os, re, json, threading, time, secrets
+import os, re, json, threading, time, secrets, logging
 from typing import Optional
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+
+_log = logging.getLogger("interseptix.sdk")
 
 try:
     import httpx
@@ -83,14 +85,24 @@ def _extract(field, endpoint, method, payload_str):
         return d.get(field)
     except: return None
 
+def _scope_covered(action_verb: str, resource: str, scopes: list) -> bool:
+    """Wildcard-aware scope check matching the server-side logic."""
+    needed = f"{action_verb}:{resource}"
+    return (
+        needed in scopes
+        or f"*:{resource}" in scopes
+        or f"{action_verb}:*" in scopes
+        or "*:*" in scopes
+    )
+
 def _evaluate_local(agent_id, scopes, method, endpoint, payload_str, rules, rate_count=0):
     for prefix in _ALWAYS_BLOCKED:
         if endpoint.startswith(prefix):
             return {"allowed":False,"outcome":"blocked","reason":f"permanently blocked: {endpoint}"}
-    resource = endpoint.strip("/").split("/")[0] or "root"
-    action   = _METHOD_SCOPE.get(method.upper(),"write")
-    needed   = f"{action}:{resource}"
-    if not (needed in scopes or f"*:{resource}" in scopes or "*:*" in scopes):
+    resource    = endpoint.strip("/").split("/")[0] or "root"
+    action_verb = _METHOD_SCOPE.get(method.upper(),"write")
+    if not _scope_covered(action_verb, resource, scopes):
+        needed = f"{action_verb}:{resource}"
         return {"allowed":False,"outcome":"blocked","reason":f"missing scope {needed}"}
     redacted = []
     for rule in rules:
@@ -161,7 +173,7 @@ class Interseptix:
             else:
                 self._ready = self.fail_open
         except Exception as e:
-            print(f"[Interseptix] Warning: {e}. Running {'open' if self.fail_open else 'closed'}.")
+            _log.warning("[Interseptix] Warning: %s. Running %s.", e, "open" if self.fail_open else "closed")
             self._ready = self.fail_open
 
     def _refresh_loop(self):
@@ -174,13 +186,13 @@ class Interseptix:
                 if r.status_code == 200:
                     rules = r.json().get("rules", [])
                     if not rules:
-                        print("[Interseptix] Warning: 0 active policies returned from server.")
+                        _log.warning("[Interseptix] Warning: 0 active policies returned from server.")
                     with self._rules_lock: self._rules = rules
                     backoff = 30  # reset on success
                 else:
                     backoff = min(backoff * 2, 300)  # exponential backoff, max 5min
             except Exception as e:
-                print(f"[Interseptix] Warning: failed to refresh rules: {e}. Retrying in {backoff}s.")
+                _log.warning("[Interseptix] Warning: failed to refresh rules: %s. Retrying in %ds.", e, backoff)
                 backoff = min(backoff * 2, 300)
 
     def register(self, name, owner, framework="unknown", scopes=None, tags=None, parent_agent_id=None):
@@ -222,12 +234,29 @@ class Interseptix:
         merged = list(dict.fromkeys(base_scopes + extra))
         c = _ctx(); c.agent_id = agent_id; c.scopes = merged
 
+        # Clear token cache — scopes may have changed for this agent
+        if hasattr(self, "_token_cache"):
+            with self._token_lock:
+                keys_to_clear = [k for k in self._token_cache if k.startswith(f"{agent_id}:")]
+                for k in keys_to_clear:
+                    del self._token_cache[k]
+
     def _install_interceptor(self):
         if not _HAS_HTTPX: return
         sdk = self
         orig = httpx.Client.send
+        _PASSTHROUGH_HOSTS = (
+            "api.anthropic.com",
+            "api.openai.com",
+            "generativelanguage.googleapis.com",
+            "api.cohere.com",
+            "api.mistral.ai",
+        )
         def patched(client_self, request, *args, **kwargs):
-            if sdk.base_url in str(request.url):
+            url_str = str(request.url)
+            if sdk.base_url in url_str:
+                return orig(client_self, request, *args, **kwargs)
+            if any(h in url_str for h in _PASSTHROUGH_HOSTS):
                 return orig(client_self, request, *args, **kwargs)
             if not sdk._ready:
                 if sdk.fail_open: return orig(client_self, request, *args, **kwargs)
