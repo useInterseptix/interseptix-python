@@ -43,7 +43,7 @@ jobs:
             || (echo "Built sdist does not match tag ${GITHUB_REF_NAME}"; ls -la dist; exit 1)
 
       - name: Upload to PyPI
-        run: twine upload --skip-existing dist/*
+        run: twine upload --verbose --skip-existing dist/*
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
